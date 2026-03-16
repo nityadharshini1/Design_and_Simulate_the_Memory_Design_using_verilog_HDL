@@ -19,21 +19,227 @@ Vivado 2023.1
 # RAM
 // Verilog code
 
+
+module ram_8x8 (clk,we,addr,din,dout);
+    input  wire clk,we;        
+    input  wire [2:0]  addr;      
+    input  wire [7:0]  din;      
+    output reg  [7:0]  dout; 
+    reg [7:0] memory [0:7];       
+    always @(posedge clk) begin
+        if (we)
+            memory[addr] <= din;
+    end
+    always @(*) 
+    begin
+        dout = memory[addr];
+    end
+endmodule
+
+
 // Test bench
 
+
+module ram_8x8_tb;
+reg clk;
+reg we;
+reg [2:0] addr;
+reg [7:0] din;
+wire [7:0] dout;
+
+ram_8x8 uut (clk,we,addr,din,dout);
+always #5 clk = ~clk;
+
+initial 
+begin
+    clk = 0;
+    we  = 0;
+    addr = 0;
+    din = 0;
+    #10 
+    we = 1; 
+    addr = 3'b000; 
+    din = 8'hA1;
+    
+    #10 
+    addr = 3'b001; 
+    din = 8'hB2;
+    
+    #10 
+    addr = 3'b010; 
+    din = 8'hC3;
+    
+    #10
+     we = 0;
+    #10 
+    addr = 3'b000;
+    #10 
+    addr = 3'b001;
+    #10 
+    addr = 3'b010;
+
+    #20 $stop;
+end
+
+endmodule
+
+
 // output Waveform
+
 
 # ROM
 // write verilog code for ROM using $random
 
+
+`timescale 1ns / 1ps
+module rom_random (addr,data);
+    input  wire [2:0] addr;  
+    output reg  [7:0] data;   
+    reg [7:0] memory [0:7];  
+    integer i;
+
+    initial
+    begin
+        for (i = 0; i < 8; i = i + 1) begin
+            memory[i] = $random;
+        end
+    end
+    always @(*)
+    begin
+        data = memory[addr];
+    end
+endmodule
+
+
 // Test bench
 
+
+
+`timescale 1ns / 1ps
+module rom_random_tb;
+
+reg  [2:0] addr;
+wire [7:0] data;
+rom_random uut (addr,data);
+
+initial
+begin
+    addr = 3'b000;
+    #10 
+    addr = 3'b001;
+    #10 
+    addr = 3'b010;
+    #10 
+    addr = 3'b011;
+    #10 
+    addr = 3'b100;
+    #10 
+    addr = 3'b101;
+    #10 
+    addr = 3'b110;
+    #10 
+    addr = 3'b111;
+    #10 $stop;
+end
+endmodule
+
+
+
 // output Waveform
+
 
 # FIFO
 // write verilog code for FIFO
 
+
+`timescale 1ns / 1ps
+
+module fifo_8x8 (clk,rst,wr_en,rd_en,din,dout,full,empty);
+
+    input  wire clk,rst,wr_en,rd_en;
+    input  wire [7:0] din;
+
+    output reg  [7:0] dout;
+
+    output wire full,empty;
+
+    reg [7:0] memory [0:7];   
+    reg [2:0] wr_ptr = 0;
+    reg [2:0] rd_ptr = 0;
+    reg [3:0] count  = 0;    
+
+    assign full  = (count == 8);
+    assign empty = (count == 0);
+
+    always @(posedge clk or posedge rst) 
+    begin
+        if (rst) 
+        begin
+            wr_ptr <= 0;
+            rd_ptr <= 0;
+            count  <= 0;
+            dout   <= 0;
+        end
+        else begin
+            if (wr_en && !full) 
+            begin
+                memory[wr_ptr] <= din;
+                wr_ptr <= wr_ptr + 1;
+                count  <= count + 1;
+            end
+            if (rd_en && !empty) 
+            begin
+                dout <= memory[rd_ptr];
+                rd_ptr <= rd_ptr + 1;
+                count  <= count - 1;
+            end
+        end
+    end
+endmodule
+
+ 
 // Test bench
+
+
+`timescale 1ns / 1ps
+module fifo_8x8_tb;
+
+reg clk,rst,wr_en,rd_en;
+reg [7:0] din;
+wire [7:0] dout;
+wire full,empty;
+
+fifo_8x8 uut (clk,rst,wr_en,rd_en,din,dout,full,empty);
+
+always #5 clk = ~clk;
+
+initial 
+begin
+    clk = 0;
+    rst = 1;
+    wr_en = 0;
+    rd_en = 0;
+    din = 0;
+    #10 
+    rst = 0;
+    #10 
+    wr_en = 1; 
+    din = 8'hA1;
+    #10 
+    din = 8'hB2;
+    #10 
+    din = 8'hC3;
+    #10 
+    wr_en = 0;
+    #10 
+    rd_en = 1;
+    #30 
+    rd_en = 0;
+
+    #20 $stop;
+end
+endmodule
+
 
 // output Waveform
 
